@@ -17,6 +17,9 @@ public class Node {
     
     private int protocolTimer = 0;
     private int assignedSlot = -1;
+    
+    private int backoffCounter = 0;
+    private int contentionWindow = 0;
 
     public Node(int id, double x, double y) {
         this.id = id;
@@ -58,6 +61,13 @@ public class Node {
 
     public void setReceivingPacket(Packet p) { this.currentReceivingPacket = p; }
     public Packet getReceivingPacket() { return currentReceivingPacket; }
+    
+    public int getBackoffCounter() { return backoffCounter; }
+    public void setBackoffCounter(int backoff) { this.backoffCounter = backoff; }
+    public void decrementBackoff() { if (backoffCounter > 0) backoffCounter--; }
+    
+    public int getContentionWindow() { return contentionWindow; }
+    public void setContentionWindow(int cw) { this.contentionWindow = cw; }
     
     public boolean isDead() { return energyLevel <= 0; }
 }

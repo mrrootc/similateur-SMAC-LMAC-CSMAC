@@ -10,6 +10,8 @@ public class SMAC extends MacProtocol {
     private static final int LISTEN_TIME = SimulationConstants.SMAC_LISTEN_TIME;
     private static final int SLEEP_TIME = SimulationConstants.SMAC_SLEEP_TIME;
     private static final int CYCLE_TIME = LISTEN_TIME + SLEEP_TIME;
+    private static final int SYNC_INTERVAL = SimulationConstants.SMAC_SYNC_INTERVAL;
+    private static final int CONTENTION_WINDOW = SimulationConstants.SMAC_CONTENTION_WINDOW;
 
     @Override
     public String getName() { return "S-MAC"; }
@@ -61,10 +63,25 @@ public class SMAC extends MacProtocol {
         
         if (timeInCycle < LISTEN_TIME) {
             node.setState(NodeState.IDLE);
-            if (node.hasPacketsToSend() && isChannelClear(node)) {
-                node.setState(NodeState.TRANSMIT);
-                node.setProtocolTimer(SimulationConstants.PACKET_DURATION);
-                stats.recordPacketSent();
+            
+            if (node.hasPacketsToSend()) {
+                if (node.getContentionWindow() == 0) {
+                    node.setContentionWindow(CONTENTION_WINDOW);
+                    node.setBackoffCounter((int) (Math.random() * CONTENTION_WINDOW));
+                }
+
+                if (isChannelClear(node)) {
+                    if (node.getBackoffCounter() > 0) {
+                        node.decrementBackoff();
+                    } else {
+                        node.setState(NodeState.TRANSMIT);
+                        node.setProtocolTimer(SimulationConstants.PACKET_DURATION);
+                        stats.recordPacketSent();
+                        node.setContentionWindow(0);
+                    }
+                }
+            } else {
+                node.setContentionWindow(0);
             }
         } else {
             if (node.hasPacketsToSend()) {

@@ -8,42 +8,39 @@ import java.util.List;
 
 public class LMAC extends MacProtocol {
     private static final int SLOT_DURATION = SimulationConstants.LMAC_SLOT_DURATION;
-    private int totalSlots;
+    private static final int TOTAL_SLOTS = SimulationConstants.LMAC_SLOTS_PER_FRAME;
 
     @Override
     public String getName() { return "L-MAC"; }
 
     @Override
     protected void setupNodes() {
-        totalSlots = network.getNodes().size();
-        for (int i = 0; i < totalSlots; i++) {
+        for (int i = 0; i < network.getNodes().size(); i++) {
             Node node = network.getNodes().get(i);
-            node.setAssignedSlot(i);
+            node.setAssignedSlot(i % TOTAL_SLOTS);
         }
     }
 
     @Override
     public void onNodeAdded(Node node) {
-        node.setAssignedSlot(network.getNodes().size() - 1);
-        totalSlots = network.getNodes().size();
+        node.setAssignedSlot((network.getNodes().size() - 1) % TOTAL_SLOTS);
     }
 
     @Override
     public void reset() {
-        totalSlots = 0;
     }
 
     @Override
     public String getCurrentStatus(long currentTime) {
-        if (totalSlots <= 0) return "L-MAC: No Nodes";
-        long frameTime = currentTime % (totalSlots * (long)SLOT_DURATION);
+        if (network.getNodes().isEmpty()) return "L-MAC: No Nodes";
+        long frameTime = currentTime % (TOTAL_SLOTS * (long)SLOT_DURATION);
         int currentSlot = (int) (frameTime / SLOT_DURATION);
-        return String.format("L-MAC Frame: Slot %d/%d is active", currentSlot, totalSlots);
+        return String.format("L-MAC Frame: Slot %d/%d is active", currentSlot, TOTAL_SLOTS);
     }
 
     @Override
     public void executeStep(Node node, long currentTime) {
-        if (node.isDead() || totalSlots <= 0) {
+        if (node.isDead() || network.getNodes().isEmpty()) {
             node.setState(NodeState.SLEEP);
             return;
         }
@@ -57,7 +54,7 @@ public class LMAC extends MacProtocol {
             return;
         }
 
-        long frameTime = currentTime % (totalSlots * (long)SLOT_DURATION);
+        long frameTime = currentTime % (TOTAL_SLOTS * (long)SLOT_DURATION);
         int currentSlot = (int) (frameTime / SLOT_DURATION);
 
         if (currentSlot == node.getAssignedSlot()) {

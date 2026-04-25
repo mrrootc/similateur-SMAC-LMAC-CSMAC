@@ -55,11 +55,31 @@ public class CSMA extends MacProtocol {
         // Par défaut, en CSMA pur sans sommeil, le nœud est en IDLE (écoute)
         node.setState(NodeState.IDLE);
 
-        // Si on a des paquets à envoyer, on vérifie le canal (Carrier Sense)
-        if (node.hasPacketsToSend() && isChannelClear(node)) {
-            node.setState(NodeState.TRANSMIT);
-            node.setProtocolTimer(SimulationConstants.PACKET_DURATION);
-            stats.recordPacketSent();
+        // Si on a des paquets à envoyer
+        if (node.hasPacketsToSend()) {
+            if (node.getContentionWindow() == 0) {
+                // Initialize contention window and backoff
+                node.setContentionWindow(SimulationConstants.CSMA_MIN_CONTENTION_WINDOW);
+                node.setBackoffCounter((int) (Math.random() * node.getContentionWindow()) * SimulationConstants.CSMA_BACKOFF_TIME);
+            }
+
+            if (isChannelClear(node)) {
+                if (node.getBackoffCounter() > 0) {
+                    node.decrementBackoff();
+                } else {
+                    // Transmission
+                    node.setState(NodeState.TRANSMIT);
+                    node.setProtocolTimer(SimulationConstants.PACKET_DURATION);
+                    stats.recordPacketSent();
+                    node.setContentionWindow(0); // Reset CW after successful transmission
+                }
+            } else {
+                // Channel busy, freeze or double backoff/CW
+                // For this implementation, wait until channel is clear to resume backoff.
+                // Optionally double CW here for collisions, handled in handleTransmissions.
+            }
+        } else {
+            node.setContentionWindow(0);
         }
     }
 
